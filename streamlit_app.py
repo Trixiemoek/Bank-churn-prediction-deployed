@@ -13,7 +13,7 @@ import streamlit as st
 from joblib import load
 
 # Load pre-trained model
-model = load('model.pkl')
+model = load('best_model.pkl')
 
 # Define function to make predictions using the model
 def predict_churn(input_df):
