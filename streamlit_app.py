@@ -8,65 +8,53 @@ Original file is located at
 """
 
 # Importing relevant packages
-import pandas as pd
 import streamlit as st
+import pandas as pd
 from joblib import load
+import xgboost
 
-# Load pre-trained model
+
+# Set page title
+st.set_page_config(page_title="Bank Customer Churn Prediction")
+
+# Load pre-trained model and encoders
 model = load('best_model.pkl')
+label_encoder = load('label_encoder.pkl')
+ohe = load('one_hot_encoder.pkl')
+
+# Placeholder function for preprocessing
+def preprocess_data(data):
+    # Drop 'Surname' column if present
+    if 'Surname' in data.columns:
+        data = data.drop(['Surname'], axis=1)
+
+    # Convert 'Gender' and 'Geography' columns to category type
+    for col in ['Gender', 'Geography']:
+        if col in data.columns:
+            data[col] = data[col].astype('category')
+
+    # Apply Label Encoding to 'Gender' column
+    if 'Gender' in data.columns:
+        data['Gender'] = label_encoder.transform(data['Gender'].astype(str))
+
+    # One-hot encode 'Geography' column
+    if 'Geography' in data.columns:
+        # Ensure consistent feature names for one-hot encoding
+        expected_feature_names = ['Geography_France', 'Geography_Germany', 'Geography_Spain']
+        geo_encoded = pd.DataFrame(ohe.transform(data[['Geography']]), columns=expected_feature_names)
+        data = pd.concat([data.drop('Geography', axis=1), geo_encoded], axis=1)
+
+    return data
 
 # Define function to make predictions using the model
 def predict_churn(input_df):
+    # Preprocess input data
+    input_df = preprocess_data(input_df)
     predictions = model.predict(input_df)
     return ['Yes' if prediction == 1 else 'No' for prediction in predictions]
 
 # Main function for Streamlit web app
 def main():
-    # Set page title
-    st.set_page_config(page_title="Bank Customer Churn Prediction")
-
-    # Display header
-    st.title("Bank Customer Churn Prediction App")
-
-    # File upload
-    uploaded_file = st.file_uploader("Choose a CSV file", type="csv")
-
-    if uploaded_file is not None:
-        # Read the CSV file
-        input_df = pd.read_csv(uploaded_file)
-
-        # Display the input DataFrame
-        st.write("Uploaded CSV file:")
-        st.write(input_df)
-
-        # Make predictions when button is clicked
-        if st.button("Predict Churn"):
-            churn_predictions = predict_churn(input_df)
-            input_df['Churn Prediction'] = churn_predictions
-            st.write("Predictions:")
-            st.write(input_df)
-
-# Run the main function if the script is executed
-if __name__ == '__main__':
-    main()
-# Importing relevant packages
-import pandas as pd
-import streamlit as st
-from joblib import load
-
-# Load pre-trained model
-model = load('model.pkl')
-
-# Define function to make predictions using the model
-def predict_churn(input_df):
-    predictions = model.predict(input_df)
-    return ['Yes' if prediction == 1 else 'No' for prediction in predictions]
-
-# Main function for Streamlit web app
-def main():
-    # Set page title
-    st.set_page_config(page_title="Bank Customer Churn Prediction")
-
     # Display header
     st.title("Bank Customer Churn Prediction App")
 
